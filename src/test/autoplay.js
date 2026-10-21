@@ -7,7 +7,7 @@ import { makeRng } from '../core/rng.js';
 import { addTicker, clock } from '../gfx/clock.js';
 import { canUpgrade } from '../core/cards.js';
 
-export function startAutoplay(game, { strat = 'balanced', god = false, speed = 1, seed = 1 } = {}) {
+export function startAutoplay(game, { strat = 'balanced', god = false, speed = 1, seed = 1, gallery = false } = {}) {
   const bot = new Bot(strat, makeRng(seed));
   const log = (window.__autolog = []);
   const note = (m) => { log.push(`[${clock.t.toFixed(1)}] ${m}`); };
@@ -91,7 +91,7 @@ export function startAutoplay(game, { strat = 'balanced', god = false, speed = 1
       return click(q('#r-next'), 'reward done');
     }
     if (q('#rest .restopts')) {
-      const hurt = run.hp / run.maxHp < 0.6 || !run.deck.some(canUpgrade);
+      const hurt = run.hp < run.maxHp && (run.hp / run.maxHp < 0.6 || !run.deck.some(canUpgrade));
       return click(q(hurt ? '#rs-heal' : '#rs-up'), hurt ? 'rest' : 'smith');
     }
     if (q('#shop')) {
@@ -123,8 +123,23 @@ export function startAutoplay(game, { strat = 'balanced', god = false, speed = 1
     }
   }
 
+  // Gallery mode: linger on each new kind of screen so the test harness can screenshot it.
+  const galleryShown = new Set();
+  let shotAt = 0, shotKey = null;
+  function galleryKey() {
+    const scr = [...document.querySelectorAll('#screens > .screen')].map((e) => e.id).join('+');
+    const b = game.battle;
+    if (b && !b.ended && !scr) return b.hand.enabled && b.combat.turn === 1 ? 'battle-' + b.kind + '-' + game.world.kind : null;
+    return scr || null;
+  }
+
   const stop = addTicker(() => {
+    if (shotKey && clock.rt >= shotAt) { window.__shotReq = shotKey; shotKey = null; }
     if (clock.rt < next || window.__autoDone) return;
+    if (gallery) {
+      const k = galleryKey();
+      if (k && !galleryShown.has(k)) { galleryShown.add(k); shotKey = k; shotAt = clock.rt + 1.0; next = clock.rt + 1.6; return; }
+    }
     delay(0.25);
     try {
       if (game.battle && !game.battle.ended) battleStep(game.battle);

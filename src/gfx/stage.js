@@ -3,7 +3,7 @@
 import * as THREE from 'three';
 import { createPost } from './post.js';
 import { ParticleSystem } from './particles.js';
-import { Actor } from './actor.js';
+import { Actor, actorLift } from './actor.js';
 import { Painter, hex } from './pixel.js';
 import {
   PPU, forestGround, stoneBricks, chapelFloor, summitFloor, runeCircle, gradientCanvas, radialCanvas,
@@ -64,7 +64,7 @@ function spriteFromPainter(key, w, h, draw, { glow = false, shadow = true, lit =
 
 const STAGE_PRESETS = {
   forest: {
-    fog: '#7f97a6', fogDensity: 0.03, exposure: 1.05,
+    fog: '#7f97a6', fogDensity: 0.03, exposure: 1.05, actorLift: 0.06,
     hemi: ['#b8d4ff', '#4a5a34', 0.9], sun: ['#ffe2b0', 2.6, [-8, 12, 7]],
     sky: [[0, '#6f9fd0'], [0.55, '#b9d2e2'], [0.8, '#e8dcc0'], [1, '#e8d6b0']],
     dof: { focusDist: 15.2, focusRange: 2.2, blurFar: 14, blurNear: 5, tilt: 0.55 },
@@ -72,18 +72,18 @@ const STAGE_PRESETS = {
     bloom: [0.5, 0.5, 0.8],
   },
   chapel: {
-    fog: '#2c2238', fogDensity: 0.045, exposure: 1.1,
-    hemi: ['#8a7ab8', '#2a1a20', 0.55], sun: ['#c8b8ff', 1.3, [4, 12, -6]],
-    sky: [[0, '#140e22'], [1, '#2c2238']],
+    fog: '#3c3448', fogDensity: 0.036, exposure: 1.4, actorLift: 0.22,
+    hemi: ['#c0b4d4', '#4a3428', 1.15], sun: ['#d8c8ff', 2.4, [4, 12, -6]],
+    sky: [[0, '#1c1630'], [1, '#3a3050']],
     dof: { focusDist: 15.2, focusRange: 2.0, blurFar: 10, blurNear: 5, tilt: 0.6 },
     grade: { saturation: 1.05, contrast: 1.08, lift: [0.03, 0.01, 0.06], gain: [1.05, 0.97, 0.98], vignette: 0.7 },
     bloom: [0.75, 0.55, 0.72],
   },
   summit: {
-    fog: '#1c1d3c', fogDensity: 0.012, exposure: 1.15,
+    fog: '#1c1d3c', fogDensity: 0.012, exposure: 1.15, actorLift: 0.2,
     hemi: ['#6a7ad0', '#20142a', 0.6], sun: ['#a8c0ff', 1.8, [-6, 14, 4]],
-    sky: [[0, '#05050f'], [0.5, '#141838'], [0.85, '#3a2a5a'], [1, '#5a3a6a']],
-    dof: { focusDist: 16.5, focusRange: 2.8, blurFar: 16, blurNear: 5, tilt: 0.45 },
+    sky: [[0, '#04040c'], [0.4, '#141638'], [0.55, '#3a2658'], [0.63, '#8a4068'], [0.69, '#d07a62'], [0.76, '#4a2440'], [1, '#1a1020']],
+    dof: { focusDist: 16.5, focusRange: 2.8, blurFar: 6, blurNear: 5, tilt: 0.45 },
     grade: { saturation: 1.1, contrast: 1.1, lift: [0.02, 0.01, 0.07], gain: [0.98, 0.98, 1.06], vignette: 0.65 },
     bloom: [0.85, 0.6, 0.7],
   },
@@ -174,6 +174,7 @@ export class World {
     this.clearStage();
     this.kind = kind;
     const P = (this.preset = STAGE_PRESETS[kind]);
+    actorLift.value = P.actorLift ?? 0.1;
     this.scene.fog = new THREE.FogExp2(new THREE.Color(P.fog), P.fogDensity);
     this.renderer.toneMappingExposure = P.exposure;
     this.hemi.color.set(P.hemi[0]); this.hemi.groundColor.set(P.hemi[1]); this.hemi.intensity = P.hemi[2];
@@ -188,8 +189,8 @@ export class World {
     b.strength = P.bloom[0]; b.radius = P.bloom[1]; b.threshold = P.bloom[2];
     this.baseBloom = P.bloom[0];
     this.camBase = kind === 'summit'
-      ? { pos: new THREE.Vector3(0.6, 3.4, 17.6), look: new THREE.Vector3(0.9, 1.75, 0) }
-      : { pos: new THREE.Vector3(0.3, 2.9, 15.2), look: new THREE.Vector3(0.5, 1.25, 0) };
+      ? { pos: new THREE.Vector3(0.6, 3.4, 17.6), look: new THREE.Vector3(0.9, 2.4, 0) }
+      : { pos: new THREE.Vector3(0.3, 2.9, 15.2), look: new THREE.Vector3(0.5, 1.95, 0) };
     this.resetCamera(true);
     if (kind === 'forest') this.buildForest(seed);
     else if (kind === 'chapel') this.buildChapel(seed);
@@ -362,7 +363,7 @@ export class World {
     run.rotation.x = -Math.PI / 2; run.position.set(0, 0.01, 0); run.receiveShadow = true;
     this.stageGroup.add(run);
     // back wall
-    const wallMat = this.stoneMat('wall', [24, 6], '#5a5266', false);
+    const wallMat = this.stoneMat('wall', [24, 6], '#7a7290', false);
     const wall = new THREE.Mesh(new THREE.BoxGeometry(48, 14, 1), wallMat);
     wall.position.set(0, 7, -9.5); wall.receiveShadow = true;
     this.stageGroup.add(wall);
@@ -370,9 +371,9 @@ export class World {
     const gkey = 'glass';
     const gtex = pixTex(gkey, () => stainedGlass(64, 128));
     const gglow = glowTexFrom(gkey, gkey);
-    for (const [x, s] of [[0.8, 1.35], [-8.5, 1], [10, 1]]) {
+    for (const [x, s] of [[0.8, 1.15], [-8.5, 0.9], [10, 0.9]]) {
       const win = new THREE.Mesh(new THREE.PlaneGeometry(2 * s, 4 * s), new THREE.MeshStandardMaterial({ map: gtex, emissiveMap: gglow, emissive: new THREE.Color(1, 1, 1), emissiveIntensity: 0.9, alphaTest: 0.5 }));
-      win.position.set(x, 6.4 + (s > 1 ? 0.6 : 0), -8.95);
+      win.position.set(x, 5.4 + (s > 1 ? 0.5 : 0), -8.95);
       this.stageGroup.add(win);
       this.addShaft([x, 9.5, -8.6], [-0.75, 0, 0.18], [2.6 * s, 17], '#c8b0ff', 0.12);
     }
@@ -438,10 +439,10 @@ export class World {
     moonP.ellipse(48, 48, 46, 46, [hex('#8a90b8'), hex('#b8c0e0'), hex('#dfe4fa'), hex('#f6f8ff')], {});
     for (const [x, y, r] of [[30, 34, 8], [60, 58, 11], [52, 26, 5], [36, 64, 6], [70, 38, 4]]) moonP.ellipse(x, y, r, r, [hex('#9aa0c8'), hex('#b8bede')], {});
     const moonTex = pixTex('moon', () => moonP);
-    this.moon = new THREE.Mesh(new THREE.PlaneGeometry(30, 30), new THREE.MeshBasicMaterial({ map: moonTex, transparent: true, alphaTest: 0.5, fog: false, color: new THREE.Color(1.6, 1.6, 1.7) }));
-    this.moon.position.set(-38, 42, -138);
+    this.moon = new THREE.Mesh(new THREE.PlaneGeometry(20, 20), new THREE.MeshBasicMaterial({ map: moonTex, transparent: true, alphaTest: 0.5, fog: false, color: new THREE.Color(1.05, 1.05, 1.15) }));
+    this.moon.position.set(22, 20, -138);
     this.stageGroup.add(this.moon);
-    this.moonGlow = this.addGlowSprite([-38, 42, -137], 90, '#8aa0ff', 0.55);
+    this.moonGlow = this.addGlowSprite([22, 20, -137], 60, '#8aa0ff', 0.4);
     // cloud sea below
     const ct = softTex('cloud', () => cloudCanvas());
     for (let i = 0; i < 16; i++) {
@@ -452,7 +453,7 @@ export class World {
       this.stageGroup.add(m);
       this.ambient.push((t) => { m.position.x = x + Math.sin(t * 0.03 + i) * 8; });
     }
-    this.addStrip('peaks', 512, 96, { color: '#232848', top: '#3a4070', seed: 13, kind: 'mountain', rough: 1 }, 260, 40, [0, 4, -110], { fog: false });
+    this.addStrip('peaks', 512, 96, { color: '#1a1a34', top: '#4a3a6a', seed: 13, kind: 'mountain', rough: 1 }, 260, 40, [0, 4, -110], { fog: false });
     // platform
     const ptex = pixTex('summitFloor', () => summitFloor(256, 256), { repeat: [5, 5] });
     const plat = new THREE.Mesh(new THREE.CylinderGeometry(11, 10, 1.2, 28), [
@@ -482,17 +483,6 @@ export class World {
     this.stageGroup.add(top);
     this.towerGlow = this.addGlowSprite([9, 15.8, -13], 9, '#a070ff', 0.9);
     for (const [x, z, h] of [[-8, -6, 5], [-11.5, -9, 7.5], [8.5, -5.5, 3.2]]) this.pillar(x, z, h, { r: 0.55, hue: '#4a4e68', moss: false, broken: h < 4 });
-    // floating rocks
-    const rockMat = this.stoneMat('frock', [1, 1], '#4a4e68', false);
-    rockMat.flatShading = true;
-    for (let i = 0; i < 9; i++) {
-      const m = new THREE.Mesh(new THREE.DodecahedronGeometry(0.4 + (i % 3) * 0.35, 0), rockMat);
-      const x = -16 + i * 4, y = 3 + (i % 4) * 2.2, z = -10 - (i % 3) * 4;
-      m.position.set(x, y, z);
-      m.castShadow = true;
-      this.stageGroup.add(m);
-      this.ambient.push((t) => { m.position.y = y + Math.sin(t * 0.7 + i) * 0.4; m.rotation.y = t * 0.1 + i; m.rotation.x = t * 0.07; });
-    }
     // swirling ash & violet embers
     this.particles.addEmitter({ rate: 22, make: () => ({ x: -14 + Math.random() * 28, y: 9, z: -9 + Math.random() * 12, vx: 0.8, vy: -0.45, life: 12, size: 5 + Math.random() * 3, shape: 1, r: 0.55, g: 0.55, b: 0.7, a: 0.7, wobble: 1.2, wobbleF: 1.4 }) });
     this.particles.addEmitter({ rate: 7, make: () => ({ x: -8 + Math.random() * 18, y: 0, z: -5 + Math.random() * 6, vx: 0, vy: 0.6, life: 5, size: 9, r: 0.7, g: 0.45, b: 1, a: 1, wobble: 0.8, wobbleF: 2, twinkle: 5 }) });
@@ -501,7 +491,7 @@ export class World {
 
   setBossPhase2() {
     if (this.kind !== 'summit') return;
-    this.moon.material.color.set(new THREE.Color(2.2, 0.6, 0.5));
+    this.moon.material.color.set(new THREE.Color(1.5, 0.45, 0.4));
     this.moonGlow.material.color.set('#ff4a3a');
     this.towerGlow.material.color.set('#ff4a3a');
     this.runes.material.color.set(new THREE.Color(1.6, 0.4, 0.3));

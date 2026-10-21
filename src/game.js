@@ -1,6 +1,6 @@
 // Game flow: title, map, nodes (combat / rest / shop / event / treasure), rewards, endings.
 import { createRun, availableNodes, enterNode, pickEncounter, cardChoices, goldReward, relicChoice, potionDrop, addRelic, addPotion, makeShop, removeCard, upgradeCard, restHeal, MAP_ROWS, MAP_COLS } from './core/run.js';
-import { CARDS, canUpgrade, cardStats } from './core/cards.js';
+import { CARDS, canUpgrade, cardStats, makeCard } from './core/cards.js';
 import { RELICS, POTIONS } from './core/relics.js';
 import { pickEvent } from './core/events.js';
 import { randomSeed } from './core/rng.js';
@@ -11,6 +11,7 @@ import { tween, wait, ease } from './gfx/clock.js';
 import * as FX from './gfx/fx.js';
 import { el, bindTip, showTip, hideTip, eventToDesign, formatText, toDesign, ui } from './ui/dom.js';
 import { cardElement } from './ui/cardview.js';
+import { parchmentCanvas } from './ui/mapart.js';
 import { initAudio, playMusic, sfx, setAmbience, setMuted, isMuted, muffleMusic } from './audio/audio.js';
 
 const NODE_ICON = { combat: 'n_combat', elite: 'n_elite', rest: 'n_rest', shop: 'n_shop', event: 'n_event', treasure: 'n_treasure', boss: 'n_boss' };
@@ -43,6 +44,7 @@ export class Game {
     const h = on ? 'calc(40vh + 70px)' : '0';
     this.lbTop.style.height = h;
     this.lbBot.style.height = h;
+    this.uiRoot.classList.toggle('cine', on);
   }
 
   async fadeTo(on, ms = 400) {
@@ -169,6 +171,29 @@ export class Game {
     s.querySelector('#how-close').onclick = () => { sfx('click'); s.remove(); };
   }
 
+  // Demo / capture entry: jump straight into a fight with a curated mid-run deck.
+  // Used only for recording footage and visual checks (?demo=boss|elite|normal).
+  async demo(kind) {
+    this.run = createRun(this.fixedSeed ?? 12345);
+    window.__run = this.run;
+    const run = this.run;
+    const D = (id, up = false) => makeCard(id, up);
+    run.deck = [D('strike'), D('strike'), D('defend'), D('defend'), D('lantern_edge', true), D('flash_slash', true), D('heavens_light'),
+      D('light_bolt'), D('lantern_ward'), D('flame_dance'), D('inferno'), D('blade_storm', true), D('beacon'), D('radiant_shield')];
+    run.relics.push('sunstone');
+    run.potions.push('fire');
+    run.floor = kind === 'boss' ? 13 : 8;
+    this.top.classList.remove('hidden');
+    this.demoHook = (c) => {
+      // start part-way into the fight so the highlights fit a short clip
+      c.player.statuses.radiance = 3;
+      if (kind === 'boss') for (const e of c.enemies) if (e.def.boss) e.hp = Math.round(e.maxHp * 0.62);
+    };
+    this.refreshTop();
+    const enc = kind === 'boss' ? ['lantern_king'] : kind === 'elite' ? ['candelabra'] : ['ash_wolf', 'mossguard', 'shadow_bat'];
+    await this.combatNode(kind === 'normal' ? 'normal' : kind, { enc });
+  }
+
   // ---------------------------------------------------------------- run loop
   async startRun(seed) {
     this.run = createRun(seed);
@@ -229,7 +254,10 @@ export class Game {
         <div class="mapwrap panel"><div class="scroll" style="height:${H}px"><canvas class="paths" width="${W}" height="${H}"></canvas></div></div>`;
       const scroll = s.querySelector('.scroll');
       const pos = (n) => ({ x: 50 + (n.c + 0.5 + (n.jx || 0)) * ((W - 100) / MAP_COLS), y: H - 110 - n.r * rowH + (n.jy || 0) * 40 });
-      const ctx = s.querySelector('canvas').getContext('2d');
+      const parch = parchmentCanvas(W, H, run.seed, Object.values(run.map).map(pos));
+      parch.className = 'parch';
+      scroll.insertBefore(parch, scroll.firstChild);
+      const ctx = s.querySelector('canvas.paths').getContext('2d');
       // paths (dotted ink)
       for (const n of Object.values(run.map)) {
         const a = pos(n);
@@ -241,8 +269,8 @@ export class Game {
           for (let i = 1; i < steps; i++) {
             const t = i / steps;
             const x = a.x + (b.x - a.x) * t, y = a.y + (b.y - a.y) * t;
-            ctx.fillStyle = visited ? '#ffcf7a' : '#8a7a62';
-            ctx.fillRect(Math.round(x) - 2, Math.round(y) - 2, 4, 4);
+            ctx.fillStyle = visited ? '#a8321e' : '#5c3c22';
+            ctx.fillRect(Math.round(x / 2) * 2 - 2, Math.round(y / 2) * 2 - 2, 4, 4);
           }
         }
       }
@@ -426,9 +454,10 @@ export class Game {
     const run = this.run;
     const healAmt = Math.min(run.maxHp - run.hp, Math.floor(run.maxHp * 0.3) + run.relics.reduce((a, id) => a + (RELICS[id].restBonus || 0), 0));
     const s = this.screen('rest', 'screen center');
-    s.innerHTML = `<div class="ttl" style="margin-top:-330px">焚き火</div><div class="sub">揺らめく炎が、張り詰めた心をほどいていく。</div>
-      <div class="restopts" style="margin-top:300px">
-        <div class="restopt panel" id="rs-heal"><img class="pix" src="${iconURL('hp', { size: 64 })}">休む<small>HPを${healAmt}回復</small></div>
+    s.className = 'screen';
+    s.innerHTML = `<div class="screen-head" style="top:58px"><div class="ttl">焚き火</div><div class="sub">揺らめく炎が、張り詰めた心をほどいていく。</div></div>
+      <div class="restopts">
+        <div class="restopt panel${healAmt <= 0 ? ' off' : ''}" id="rs-heal"><img class="pix" src="${iconURL('hp', { size: 64 })}">休む<small>${healAmt > 0 ? `HPを${healAmt}回復` : 'HPは満タンだ'}</small></div>
         <div class="restopt panel" id="rs-up"><img class="pix" src="${iconURL('hammer', { size: 64 })}">鍛える<small>カード1枚を<br>アップグレード</small></div>
       </div>`;
     await this.fadeTo(false, 400);
@@ -436,6 +465,7 @@ export class Game {
     if (!up.length) s.querySelector('#rs-up').style.opacity = 0.4;
     await new Promise((resolve) => {
       s.querySelector('#rs-heal').onclick = () => {
+        if (healAmt <= 0) { sfx('error'); return; }
         const h = restHeal(run); sfx('heal');
         FX.riseFx(this.world, v.player, { color: [0.5, 1.3, 0.5], n: 40 });
         this.refreshTop(); this.toastMsg(`HPが${h}回復した`);
@@ -450,6 +480,7 @@ export class Game {
     });
     s.querySelector('.restopts').remove();
     await wait(800);
+    s.remove();
     this.world.lantern.color.set('#ffb366');
   }
 
@@ -520,9 +551,8 @@ export class Game {
     await this.fadeTo(true, 250);
     const ev = pickEvent(this.run);
     const prop = SCENE_PROP[ev.scene];
-    const v = this.vignette(this.stageForFloor(), prop ? [[prop, 1.4, -0.2, { scale: 1.2 }]] : []);
-    if (prop === 'forge' || prop === 'spring') v.actors[0].group.position.x = 1.0;
-    this.world.focusOn(v.player.centerPoint().add({ x: 2.2, y: 0, z: 0 }), { zoom: 0.8, lambda: 2 });
+    const v = this.vignette(this.stageForFloor(), prop ? [[prop, -0.4, -0.2, { scale: 1.2 }]] : []);
+    this.world.focusOn(v.player.centerPoint().add({ x: 2.6, y: 0, z: 0 }), { zoom: 0.8, lambda: 2 });
     playMusic('map');
     const run = this.run;
     const s = this.screen('event', 'screen');
@@ -537,6 +567,9 @@ export class Game {
         s.classList.add('hidden');
         const r = await this.combatNode('normal', { enc, ...extra });
         if (r === 'defeat') result = 'defeat';
+        // the fight cleared the screen layer; bring the event panel back for its epilogue
+        this.vignette(this.stageForFloor(), prop ? [[prop, -0.4, -0.2, { scale: 1.2 }]] : []);
+        this.screenLayer.appendChild(s);
         return r === 'victory';
       },
       gainRelic: (id) => { if (id) { addRelic(run, id); sfx('relic'); this.toastMsg(`レリック「${RELICS[id].name}」を手に入れた`); } },

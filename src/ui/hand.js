@@ -85,15 +85,15 @@ export class Hand {
 
   layout() {
     const n = this.cards.length;
-    const spacing = Math.min(118, 660 / Math.max(1, n));
+    const spacing = Math.min(110, 640 / Math.max(1, n));
     const mid = (n - 1) / 2;
     const hi = this.hover ? this.cards.indexOf(this.hover) : -1;
     this.cards.forEach((c, i) => {
       const off = i - mid;
       let x = 640 + off * spacing;
-      let y = 606 + Math.abs(off) * Math.abs(off) * 2.6;
+      let y = 616 + Math.abs(off) * Math.abs(off) * 2.6;
       let r = off * 3.2;
-      let s = 1;
+      let s = 0.92;
       if (hi >= 0 && !this.drag && !this.selected) {
         if (i === hi) { y = 540; r = 0; s = 1.3; }
         else x += (i < hi ? -1 : 1) * Math.max(0, 70 - Math.abs(i - hi) * 18);
@@ -102,20 +102,21 @@ export class Hand {
       c.z = i === hi ? 100 : i;
     });
     if (this.selected) {
+      // lifted in place so the battlefield stays visible while aiming
       const c = this.selected;
-      const targeted = CARDS[c.inst.id].target === 'enemy';
-      c.tx = targeted ? 640 : 640; c.ty = targeted ? 540 : 520; c.tr = 0; c.ts = 1.25; c.z = 200;
+      c.ty = 528; c.tr = 0; c.ts = 1.2; c.z = 200;
     }
     if (this.drag) {
       const c = this.drag.card;
       const targeted = CARDS[c.inst.id].target === 'enemy';
-      if (targeted && this.pointer.y < PLAY_LINE + 30) { c.tx = 640; c.ty = 548; c.ts = 1.2; }
+      if (targeted && this.pointer.y < PLAY_LINE + 30) { c.ty = 528; c.ts = 1.2; }
       else { c.tx = this.pointer.x - this.drag.dx; c.ty = this.pointer.y - this.drag.dy; c.ts = 1.18; }
       c.tr = 0; c.z = 300;
     }
   }
 
   update(dt) {
+    if (!this.enabled && this.selected) this.selected = null;
     this.layout();
     for (const c of this.cards) {
       const k = this.drag && this.drag.card === c && !(CARDS[c.inst.id].target === 'enemy' && this.pointer.y < PLAY_LINE + 30) ? 40 : 15;

@@ -8,6 +8,9 @@ import { makeCanvas } from './pixel.js';
 
 const atlasCache = new Map();
 
+// Stage-wide fill so sprites stay readable in dark scenes (set per stage preset).
+export const actorLift = { value: 0.1 };
+
 export function getAtlas(id) {
   if (atlasCache.has(id)) return atlasCache.get(id);
   const s = paintSprite(id);
@@ -72,11 +75,13 @@ export class Actor {
     });
     const U = this.uniforms;
     this.material.onBeforeCompile = (shader) => {
-      Object.assign(shader.uniforms, U);
+      Object.assign(shader.uniforms, U, { uLift: actorLift });
       shader.fragmentShader = shader.fragmentShader
         .replace('#include <common>', `#include <common>
-          uniform float uFlash; uniform vec3 uFlashColor; uniform float uDissolve; uniform float uAlpha; uniform vec3 uTint;
+          uniform float uLift; uniform float uFlash; uniform vec3 uFlashColor; uniform float uDissolve; uniform float uAlpha; uniform vec3 uTint;
           float dHash(vec2 p){ return fract(sin(dot(floor(p), vec2(12.9898,78.233))) * 43758.5453); }`)
+        .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
+          totalEmissiveRadiance += diffuseColor.rgb * uLift;`)
         .replace('#include <alphatest_fragment>', `#include <alphatest_fragment>
           float dn = dHash(vMapUv * vec2(${a.w * a.n}.0, ${a.h}.0));
           float edgeY = 1.0 - vMapUv.y;
@@ -84,7 +89,7 @@ export class Actor {
         .replace('#include <dithering_fragment>', `#include <dithering_fragment>
           gl_FragColor.rgb *= uTint;
           if (uDissolve > 0.0) { float e = smoothstep(uDissolve + 0.08, uDissolve, dn * 0.7 + edgeY * 0.3 - 0.02); gl_FragColor.rgb += vec3(2.4, 1.1, 0.35) * e; }
-          gl_FragColor.rgb = mix(gl_FragColor.rgb, uFlashColor * 2.2, uFlash);`);
+          gl_FragColor.rgb = mix(gl_FragColor.rgb, uFlashColor * 1.5, uFlash);`);
     };
     this.mesh = new THREE.Mesh(geo, this.material);
     this.mesh.castShadow = castShadow;

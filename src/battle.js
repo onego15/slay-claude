@@ -45,6 +45,9 @@ const INTENT_DESC = {
   sleep: () => '眠っている。',
 };
 
+// Where a played card hovers while it resolves (between the player and the enemies).
+const PLAY_POS = { x: 470, y: 330, s: 0.9 };
+
 export class Battle {
   constructor(game, run, enemyIds, kind) {
     this.game = game;
@@ -230,7 +233,6 @@ export class Battle {
       const fs = this.world.toScreen(foot);
       const fd = toDesign(fs.x, fs.y);
       const top = a.topPoint();
-      top.y += a.pivot.position.y;
       const ts = toDesign(this.world.toScreen(top).x, this.world.toScreen(top).y);
       hud.el.style.left = fd.x + 'px';
       hud.el.style.top = fd.y + 12 + 'px';
@@ -450,6 +452,7 @@ export class Battle {
     const c = this.combat;
     switch (type) {
       case 'combatStart': {
+        if (this.game.demoHook) this.game.demoHook(c);
         for (const e of c.enemies) this.spawnEnemyActor(e, false);
         this.makeHUD(c.player);
         this.setPiles();
@@ -523,7 +526,7 @@ export class Battle {
           // card rises to the play spot, flashes, then is consumed
           const e = hc.el;
           const from = { x: hc.x, y: hc.y };
-          await tween(140, (k) => { e.style.transform = `translate(${from.x + (640 - from.x) * k - 75}px, ${from.y + (420 - from.y) * k - 105}px) scale(${hc.s + (1.1 - hc.s) * k})`; }, { easing: ease.outCubic, real: true });
+          await tween(140, (k) => { e.style.transform = `translate(${from.x + (PLAY_POS.x - from.x) * k - 75}px, ${from.y + (PLAY_POS.y - from.y) * k - 105}px) scale(${hc.s + (PLAY_POS.s - hc.s) * k})`; }, { easing: ease.outCubic, real: true });
           this.playedEl = e;
           const big = def.rarity === 'rare' || (d.x && d.x >= 3) || def.id === 'flash_slash' && (c.player.statuses.radiance || 0) >= 5;
           if (big) await this.bigCardCinematic(def);
@@ -540,9 +543,9 @@ export class Battle {
         const e = this.playedEl;
         this.playedEl = null;
         if (type === 'cardResolved') {
-          if (e) this.flyCard(d.card, { x: 640, y: 420 }, { x: 1220, y: 680 }, { dur: 260, scale0: 1.1, scale1: 0.25, rot: 30, startEl: e });
+          if (e) this.flyCard(d.card, PLAY_POS, { x: 1220, y: 680 }, { dur: 260, scale0: PLAY_POS.s, scale1: 0.25, rot: 30, startEl: e });
         } else if (type === 'powerUsed') {
-          if (e) { this.flyCard(d.card, { x: 640, y: 420 }, toDesign(...Object.values(W.toScreen(this.player.centerPoint())).slice(0, 2)), { dur: 320, scale0: 1.1, scale1: 0.1, startEl: e }); }
+          if (e) { this.flyCard(d.card, PLAY_POS, toDesign(...Object.values(W.toScreen(this.player.centerPoint())).slice(0, 2)), { dur: 320, scale0: PLAY_POS.s, scale1: 0.1, startEl: e }); }
           sfx('buff');
           FX.auraBurst(W, this.player, { color: FX.COLORS.light, size: 3 });
         } else {
@@ -550,8 +553,8 @@ export class Battle {
           for (const inst of cards) {
             const hc = this.hand.remove(inst);
             const src = d.played && e ? e : hc ? hc.el : null;
-            const from = d.played ? { x: 640, y: 420 } : hc ? { x: hc.x, y: hc.y } : { x: 640, y: 420 };
-            if (src) this.flyCard(inst, from, { x: from.x, y: from.y - 80 }, { dur: 420, scale0: 1.1, scale1: 1.0, burn: true, startEl: src });
+            const from = d.played ? PLAY_POS : hc ? { x: hc.x, y: hc.y } : PLAY_POS;
+            if (src) this.flyCard(inst, from, { x: from.x, y: from.y - 80 }, { dur: 420, scale0: PLAY_POS.s, scale1: 1.0, burn: true, startEl: src });
             FX.embers(W, this.player.centerPoint().add(V(1.5, 0.6, 0.5)), { n: 6 });
           }
           if (this.player.statuses) { /* noop */ }
