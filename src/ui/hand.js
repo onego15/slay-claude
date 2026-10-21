@@ -53,6 +53,7 @@ export class Hand {
   add(inst, from = { x: 70, y: 660 }) {
     const e = cardElement(inst, { combat: this.combat });
     const c = { inst, el: e, x: from.x, y: from.y, r: -20, s: 0.35, tx: 0, ty: 0, tr: 0, ts: 1, alpha: 1, born: performance.now() };
+    e.style.transform = `translate(${c.x - 75}px, ${c.y - 105}px) rotate(${c.r}deg) scale(${c.s})`;
     e.addEventListener('pointerdown', (ev) => this.pointerDown(ev, c));
     e.addEventListener('pointerenter', () => { if (!this.drag) { this.hover = c; sfx('hover'); } });
     e.addEventListener('pointerleave', () => { if (this.hover === c) this.hover = null; });

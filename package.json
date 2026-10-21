@@ -1,12 +1,14 @@
 {
   "name": "lanternfall",
   "version": "1.0.0",
-  "description": "HD-2D deck-building roguelite",
+  "description": "灯守の巡礼 (Lanternfall) — an HD-2D deck-building roguelite for the browser",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:single": "vite build --mode single",
+    "preview": "vite preview --port 4173",
     "sim": "node sim/simulate.mjs",
-    "preview": "vite preview"
+    "e2e": "node tools/e2e.cjs"
   },
   "keywords": [],
   "author": "",

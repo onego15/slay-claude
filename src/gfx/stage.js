@@ -189,8 +189,8 @@ export class World {
     b.strength = P.bloom[0]; b.radius = P.bloom[1]; b.threshold = P.bloom[2];
     this.baseBloom = P.bloom[0];
     this.camBase = kind === 'summit'
-      ? { pos: new THREE.Vector3(0.6, 3.4, 17.6), look: new THREE.Vector3(0.9, 2.4, 0) }
-      : { pos: new THREE.Vector3(0.3, 2.9, 15.2), look: new THREE.Vector3(0.5, 1.95, 0) };
+      ? { pos: new THREE.Vector3(0.6, 3.4, 17.6), look: new THREE.Vector3(0.9, 1.35, 0) }
+      : { pos: new THREE.Vector3(0.3, 2.9, 15.2), look: new THREE.Vector3(0.5, 0.85, 0) };
     this.resetCamera(true);
     if (kind === 'forest') this.buildForest(seed);
     else if (kind === 'chapel') this.buildChapel(seed);

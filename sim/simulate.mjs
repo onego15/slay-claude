@@ -25,7 +25,7 @@ async function fight(run, bot, enc, kind, log) {
     await c.endTurn();
     turns++;
   }
-  if (!c.over) c.over = 'defeat'; // stalemate counts as loss
+  if (!c.over) { c.over = 'defeat'; log.stalemate = true; } // stalemate counts as loss
   run.hp = Math.max(0, c.player.hp);
   log.fights.push({ enc: enc.join('+'), kind, hpStart, floor: run.floor, turns: c.turn, dmgTaken: c.stats.damageTaken, result: c.over });
   for (const [k, v] of Object.entries(c.stats.damageByCard)) log.cardDamage[k] = (log.cardDamage[k] || 0) + v;
@@ -111,9 +111,10 @@ async function playRun(seed, strategy) {
 
 const results = [];
 const t0 = Date.now();
+const crashes = [];
 for (const s of STRATS) {
   for (let i = 0; i < N; i++) {
-    results.push(await playRun(1000 + i * 7919, s));
+    try { results.push(await playRun(1000 + i * 7919, s)); } catch (e) { crashes.push(`${s}#${i}: ${e.stack}`); }
   }
 }
 const ms = Date.now() - t0;
@@ -156,3 +157,20 @@ const wins = results.filter((r) => r.result === 'victory');
 console.log('\nAvg final deck size (wins):', wins.length ? (wins.reduce((a, r) => a + r.deck.length, 0) / wins.length).toFixed(1) : '-');
 console.log('Avg fights per run:', (results.reduce((a, r) => a + r.fights.length, 0) / results.length).toFixed(1));
 console.log('Avg turns per fight:', (results.reduce((a, r) => a + r.fights.reduce((b, f) => b + f.turns, 0), 0) / results.reduce((a, r) => a + r.fights.length, 0)).toFixed(1));
+
+// ---- invariants (used as an automated test: exits non-zero on failure)
+console.log('\n== Checks');
+const stale = results.filter((r) => r.stalemate).length;
+const totalWins = results.filter((r) => r.result === 'victory').length;
+const allPlays = {};
+for (const r of results) for (const k of Object.keys(r.cardPlays || {})) allPlays[k] = 1;
+const neverPlayed = Object.keys(CARDS).filter((id) => !CARDS[id].unplayable && !['ash', 'mud', 'regret'].includes(id) && !allPlays[id]);
+const checks = [
+  ['no engine exceptions', crashes.length === 0, crashes.slice(0, 3).join('\n')],
+  ['no stalemated fights (60-turn cap)', stale === 0, `${stale} runs`],
+  ['ending reachable (some runs win)', totalWins > 0, `${totalWins} wins`],
+  ['every playable card was played by the bots', neverPlayed.length === 0, neverPlayed.join(',')],
+];
+let failed = 0;
+for (const [name, ok, info] of checks) { console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}  ${info || ''}`); if (!ok) failed++; }
+process.exitCode = failed ? 1 : 0;

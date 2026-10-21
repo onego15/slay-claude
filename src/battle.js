@@ -435,7 +435,10 @@ export class Battle {
   async flyCard(inst, from, to, { dur = 350, scale0 = 1, scale1 = 0.3, rot = 0, burn = false, startEl = null } = {}) {
     const e = startEl || cardElement(inst, {});
     e.style.pointerEvents = 'none';
-    if (!startEl) this.fxLayer.appendChild(e);
+    if (!startEl) {
+      e.style.transform = `translate(${from.x - 75}px, ${from.y - 105}px) scale(${scale0})`;
+      this.fxLayer.appendChild(e);
+    }
     if (burn) e.classList.add('burning');
     await tween(dur, (k) => {
       const x = from.x + (to.x - from.x) * k, y = from.y + (to.y - from.y) * k - Math.sin(k * Math.PI) * 60;
@@ -496,6 +499,7 @@ export class Battle {
         break;
       }
       case 'draw': {
+        this.setEnergy();
         for (const inst of d.cards) {
           this.hand.add(inst, { x: 60, y: 690 });
           sfx('draw');

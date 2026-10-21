@@ -118,7 +118,7 @@ def('flame_dance', {
 });
 def('ashen_strike', {
   name: '灰燼撃', type: 'attack', rarity: 'uncommon', cost: 1, target: 'enemy',
-  dmg: 7, mag: 4, up: { dmg: 10, mag: 5 }, text: '{D}ダメージを与える。\n（焼却したカード1枚につき+{M}）', art: 'ashblade',
+  dmg: 8, mag: 4, up: { dmg: 11, mag: 5 }, text: '{D}ダメージを与える。\n（焼却したカード1枚につき+{M}）', art: 'ashblade',
   calcDmg: (c, s) => s.dmg + s.mag * c.exhaust.length,
   async play(c, s, t) { await c.attack(t, s.dmg + s.mag * c.exhaust.length); },
 });
@@ -153,7 +153,7 @@ def('radiant_shield', {
 });
 def('ash_rite', {
   name: '灰の儀', type: 'skill', rarity: 'uncommon', cost: 0,
-  mag: 1, up: { mag: 2 }, text: '手札のカード1枚を焼却する。\nエネルギー1を得て、カードを{M}枚引く。', art: 'ashrite',
+  mag: 2, up: { mag: 3 }, text: '手札のカード1枚を焼却する。\nエネルギー1を得て、カードを{M}枚引く。', art: 'ashrite',
   async play(c, s) {
     const card = await c.chooseHand('焼却するカードを選択');
     if (card) await c.exhaustCard(card);
@@ -214,7 +214,7 @@ def('bulwark', {
 });
 def('burning_soul', {
   name: '燃ゆる魂', type: 'power', rarity: 'rare', cost: 2,
-  mag: 3, up: { mag: 4 }, text: 'ターン開始時、敵全体に灼熱{M}を与える。', art: 'phoenix',
+  mag: 2, up: { mag: 3 }, text: 'ターン開始時、敵全体に灼熱{M}を与える。', art: 'phoenix',
   async play(c, s) { await c.apply(c.player, 'burning_soul', s.mag); },
 });
 def('solar_heart', {

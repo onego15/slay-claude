@@ -285,7 +285,7 @@ img, .pix { image-rendering: pixelated; image-rendering: crisp-edges; }
 /* title */
 #title .logo { font-size: 72px; color: #ffe6b0; letter-spacing: 10px; text-shadow: 0 5px 0 #3a2008, 0 0 30px #ffb04a88, 0 0 2px #000; }
 #title .logo-en { font-size: 22px; letter-spacing: 14px; color: var(--gold); margin-top: 4px; text-shadow: 0 2px 0 #000; }
-#title .tagline { margin-top: 18px; color: var(--ink-dim); font-size: 16px; text-shadow: 0 2px 0 #000; }
+#title .tagline { margin-top: 18px; color: #f0e4c8; font-size: 16px; text-shadow: 0 2px 0 #000, 0 0 6px #000, 0 0 12px #0008; }
 #title .menu { margin-top: 48px; display: flex; flex-direction: column; gap: 14px; align-items: center; }
 #title .menu .btn { min-width: 260px; font-size: 20px; }
 #title .credit { position: absolute; bottom: 14px; right: 18px; font-size: 12px; color: #8a7e6a; text-shadow: 0 1px 0 #000; }

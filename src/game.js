@@ -127,10 +127,10 @@ export class Game {
     this.top.classList.add('hidden');
     this.run = null;
     this.vignette('forest', [['campfire', -1.2, 0.6]]);
-    this.world.camTarget.pos.set(-0.5, 2.4, 11.5);
-    this.world.camTarget.look.set(-1.4, 1.4, 0);
-    this.world.cam.pos.set(-0.5, 2.4, 11.5);
-    this.world.cam.look.set(-1.4, 1.4, 0);
+    this.world.camTarget.pos.set(0.6, 2.4, 11.5);
+    this.world.camTarget.look.set(0.2, 1.4, 0);
+    this.world.cam.pos.set(0.6, 2.4, 11.5);
+    this.world.cam.look.set(0.2, 1.4, 0);
     this.world.lantern.position.set(-1.2, 0.9, 1.4);
     this.world.lantern.intensity = 6;
     const s = this.screen('title', 'screen center');
@@ -604,7 +604,7 @@ export class Game {
     const v = this.vignette(this.stageForFloor(), [['chest', 1.2, 0.2, { scale: 1.3 }]]);
     this.world.focusOn(v.actors[0].centerPoint(), { zoom: 0.8, lambda: 2 });
     const s = this.screen('treasure', 'screen center');
-    s.innerHTML = `<div class="panel" style="padding:14px 24px;margin-top:380px;text-align:center"><div class="ttl" style="font-size:24px">古びた宝箱</div><button class="btn gold" id="tr-open" style="margin-top:10px">開ける</button></div>`;
+    s.innerHTML = `<div class="panel" style="padding:14px 24px;margin-top:500px;text-align:center"><div class="ttl" style="font-size:24px">古びた宝箱</div><button class="btn gold" id="tr-open" style="margin-top:10px">開ける</button></div>`;
     await this.fadeTo(false, 300);
     await new Promise((r) => { s.querySelector('#tr-open').onclick = r; });
     sfx('relic');
@@ -617,7 +617,7 @@ export class Game {
     if (relic) addRelic(run, relic);
     run.gold += gold;
     this.refreshTop();
-    s.innerHTML = `<div class="panel" style="padding:14px 24px;margin-top:380px;text-align:center;min-width:380px">
+    s.innerHTML = `<div class="panel" style="padding:14px 24px;margin-top:470px;text-align:center;min-width:380px">
       ${relic ? `<div class="row" style="justify-content:center"><img class="pix" style="width:48px;height:48px" src="${iconURL(RELICS[relic].icon, { size: 48 })}"><div style="text-align:left"><div class="kw">${RELICS[relic].name}</div><div class="sub" style="font-size:14px">${RELICS[relic].text}</div></div></div>` : ''}
       <div style="margin:8px 0">${gold} ゴールドを手に入れた</div><button class="btn gold" id="tr-next">先へ進む</button></div>`;
     await new Promise((r) => { s.querySelector('#tr-next').onclick = () => { sfx('click'); r(); }; });

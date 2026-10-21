@@ -2,3 +2,5 @@ node_modules
 dist
 .DS_Store
 tools/.chars.txt
+e2e-*.log
+dist-single
