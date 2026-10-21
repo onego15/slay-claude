@@ -51,7 +51,7 @@ def('rockbreaker', {
 });
 def('light_bolt', {
   name: '光弾', type: 'attack', rarity: 'common', cost: 0, target: 'enemy',
-  dmg: 3, mag: 1, up: { dmg: 5 }, text: '{D}ダメージを与える。\n輝きを{M}得る。', art: 'lightorb',
+  dmg: 4, mag: 1, up: { dmg: 6 }, text: '{D}ダメージを与える。\n輝きを{M}得る。', art: 'lightorb',
   async play(c, s, t) { await c.attack(t, s.dmg, 1, { element: 'light' }); await c.radiance(s.mag); },
 });
 def('chain_flame', {
@@ -103,7 +103,7 @@ def('insight', {
 // ---------------------------------------------------------------- uncommon
 def('flash_slash', {
   name: '閃光斬', type: 'attack', rarity: 'uncommon', cost: 1, target: 'enemy',
-  dmg: 4, mag: 3, up: { dmg: 6, mag: 4 }, text: '{D}ダメージを与える。\n（輝き1つにつき+{M}）\n輝きを全て消費する。', art: 'flash',
+  dmg: 5, mag: 4, up: { dmg: 7, mag: 5 }, text: '{D}ダメージを与える。\n（輝き1つにつき+{M}）\n輝きを全て消費する。', art: 'flash',
   calcDmg: (c, s) => s.dmg + s.mag * (c.player.statuses.radiance || 0),
   async play(c, s, t) {
     const n = c.player.statuses.radiance || 0;
@@ -118,7 +118,7 @@ def('flame_dance', {
 });
 def('ashen_strike', {
   name: '灰燼撃', type: 'attack', rarity: 'uncommon', cost: 1, target: 'enemy',
-  dmg: 7, mag: 3, up: { dmg: 10, mag: 4 }, text: '{D}ダメージを与える。\n（焼却したカード1枚につき+{M}）', art: 'ashblade',
+  dmg: 7, mag: 4, up: { dmg: 10, mag: 5 }, text: '{D}ダメージを与える。\n（焼却したカード1枚につき+{M}）', art: 'ashblade',
   calcDmg: (c, s) => s.dmg + s.mag * c.exhaust.length,
   async play(c, s, t) { await c.attack(t, s.dmg + s.mag * c.exhaust.length); },
 });
@@ -172,7 +172,7 @@ def('fighting_spirit', {
 });
 def('beacon', {
   name: '灯台', type: 'power', rarity: 'uncommon', cost: 1,
-  mag: 1, up: { cost: 0 }, text: 'ターン開始時、輝きを{M}得る。', art: 'beacon',
+  mag: 1, up: { mag: 2 }, text: 'ターン開始時、輝きを{M}得る。', art: 'beacon',
   async play(c, s) { await c.apply(c.player, 'beacon', s.mag); },
 });
 def('thorn_mail', {
@@ -182,7 +182,7 @@ def('thorn_mail', {
 });
 def('ash_pact', {
   name: '灰の契約', type: 'power', rarity: 'uncommon', cost: 1,
-  mag: 4, up: { mag: 6 }, text: 'カードを焼却するたび、ブロックを{M}得る。', art: 'pact',
+  mag: 5, up: { mag: 7 }, text: 'カードを焼却するたび、ブロックを{M}得る。', art: 'pact',
   async play(c, s) { await c.apply(c.player, 'ash_pact', s.mag); },
 });
 
@@ -194,7 +194,7 @@ def('inferno', {
 });
 def('heavens_light', {
   name: '天光', type: 'attack', rarity: 'rare', cost: 2, target: 'all',
-  mag: 5, up: { mag: 7 }, text: '輝きを全て消費し、1つにつき敵全体に{M}ダメージを与える。', art: 'sunburst',
+  mag: 6, up: { mag: 8 }, text: '輝きを全て消費し、1つにつき敵全体に{M}ダメージを与える。', art: 'sunburst',
   calcDmg: (c, s) => s.mag * (c.player.statuses.radiance || 0),
   async play(c, s) {
     const n = c.player.statuses.radiance || 0;
@@ -219,7 +219,7 @@ def('burning_soul', {
 });
 def('solar_heart', {
   name: '太陽の心臓', type: 'power', rarity: 'rare', cost: 1,
-  mag: 3, up: { mag: 5 }, text: '輝きを得るたび、ランダムな敵に{M}ダメージを与える。', art: 'sun',
+  mag: 4, up: { mag: 6 }, text: '輝きを得るたび、ランダムな敵に{M}ダメージを与える。', art: 'sun',
   async play(c, s) { await c.apply(c.player, 'solar_heart', s.mag); },
 });
 def('blade_storm', {

@@ -9,13 +9,14 @@ import {
   addRelic, addPotion, makeShop, removeCard, upgradeCard, restHeal,
 } from '../src/core/run.js';
 import { pickEvent } from '../src/core/events.js';
-import { Bot } from './bot.js';
+import { Bot } from '../src/ai/bot.js';
 
 const N = Number(process.argv[2] || 200);
 const STRATS = ['balanced', 'burn', 'radiance', 'block', 'strength', 'exhaust', 'random'];
 
 async function fight(run, bot, enc, kind, log) {
   const c = new Combat({ run, enemyIds: enc, rng: run.combatRng, kind, hooks: { chooseHand: async (cards) => bot.chooseHand(cards) } });
+  const hpStart = run.hp;
   await c.start();
   let turns = 0;
   while (!c.over && turns < 60) {
@@ -26,7 +27,7 @@ async function fight(run, bot, enc, kind, log) {
   }
   if (!c.over) c.over = 'defeat'; // stalemate counts as loss
   run.hp = Math.max(0, c.player.hp);
-  log.fights.push({ enc: enc.join('+'), kind, floor: run.floor, turns: c.turn, dmgTaken: c.stats.damageTaken, result: c.over });
+  log.fights.push({ enc: enc.join('+'), kind, hpStart, floor: run.floor, turns: c.turn, dmgTaken: c.stats.damageTaken, result: c.over });
   for (const [k, v] of Object.entries(c.stats.damageByCard)) log.cardDamage[k] = (log.cardDamage[k] || 0) + v;
   for (const [k, v] of Object.entries(c.stats.plays)) log.cardPlays[k] = (log.cardPlays[k] || 0) + v;
   if (c.over === 'victory') {
@@ -45,28 +46,7 @@ async function rewards(run, bot, kind) {
   if (pick) run.deck.push(pick);
 }
 
-function choosePath(run, bot, opts) {
-  const types = opts.map((id) => run.map[id].type);
-  const score = (t) => {
-    const hpr = run.hp / run.maxHp;
-    switch (t) {
-      case 'elite': return hpr > 0.7 ? 6 : hpr > 0.5 ? 2 : -5;
-      case 'rest': return hpr < 0.5 ? 7 : 2;
-      case 'shop': return run.gold > 150 ? 6 : 1;
-      case 'event': return 3;
-      case 'treasure': return 9;
-      case 'combat': return 3.5;
-      default: return 0;
-    }
-  };
-  let best = opts[0];
-  let bv = -Infinity;
-  for (let i = 0; i < opts.length; i++) {
-    const v = bot.strategy === 'random' ? bot.rng() : score(types[i]) + bot.rng();
-    if (v > bv) { bv = v; best = opts[i]; }
-  }
-  return best;
-}
+const choosePath = (run, bot, opts) => bot.choosePath(run, opts);
 
 async function playRun(seed, strategy) {
   const run = createRun(seed);
@@ -151,11 +131,11 @@ for (const s of STRATS) {
 console.log('\n== Death causes (encounter: deaths / attempts, avg dmg taken, avg turns)');
 const enc = {};
 for (const r of results) for (const f of r.fights) {
-  const e = (enc[f.enc] = enc[f.enc] || { n: 0, d: 0, dmg: 0, turns: 0, kind: f.kind });
-  e.n++; e.dmg += f.dmgTaken; e.turns += f.turns; if (f.result !== 'victory') e.d++;
+  const e = (enc[f.enc] = enc[f.enc] || { n: 0, d: 0, dmg: 0, turns: 0, hp: 0, kind: f.kind });
+  e.hp += f.hpStart; e.n++; e.dmg += f.dmgTaken; e.turns += f.turns; if (f.result !== 'victory') e.d++;
 }
 for (const [k, e] of Object.entries(enc).sort((a, b) => b[1].d / b[1].n - a[1].d / a[1].n)) {
-  console.log(`${k.padEnd(36)} ${e.kind.padEnd(7)} ${String(e.d).padStart(4)}/${String(e.n).padEnd(5)} dmg ${(e.dmg / e.n).toFixed(1).padStart(5)}  turns ${(e.turns / e.n).toFixed(1)}`);
+  console.log(`${k.padEnd(36)} ${e.kind.padEnd(7)} ${String(e.d).padStart(4)}/${String(e.n).padEnd(5)} dmg ${(e.dmg / e.n).toFixed(1).padStart(5)}  turns ${(e.turns / e.n).toFixed(1)}  hpIn ${(e.hp / e.n).toFixed(0)}`);
 }
 
 console.log('\n== Card win correlation (runs containing card: win rate)');

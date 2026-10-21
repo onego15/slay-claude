@@ -119,7 +119,7 @@ def('bone_knight', {
   moves: {
     flurry: { name: '連斬', intent: 'attack', dmg: 4, hits: 3, async act(c, e) { await c.enemyAttack(e, 4, 3); } },
     behead: { name: '断頭', intent: 'attack', dmg: 16, heavy: true, async act(c, e) { await c.enemyAttack(e, 16, 1, { heavy: true }); } },
-    dread: { name: '戦慄', intent: 'defend_buff', async act(c, e) { await c.enemyBlock(e, 10); await c.apply(e, 'strength', 3, { source: e }); } },
+    dread: { name: '戦慄', intent: 'defend_buff', async act(c, e) { await c.enemyBlock(e, 10); await c.apply(e, 'strength', 2, { source: e }); } },
   },
   ai(e, c, r) {
     if (e.history.length === 0) return 'flurry';
@@ -137,7 +137,7 @@ def('candelabra', {
       for (let i = 0; i < n; i++) await c.summon('candle_flame', e);
     } },
     soot: { name: '煤の嵐', intent: 'attack_debuff', dmg: 8, async act(c, e) { await c.enemyAttack(e, 8); await c.addCards('ash', 'draw', 2, e); } },
-    blaze: { name: '業炎', intent: 'attack', dmg: 13, async act(c, e) { await c.enemyAttack(e, 13, 1, { element: 'fire' }); } },
+    blaze: { name: '業炎', intent: 'attack', dmg: 12, async act(c, e) { await c.enemyAttack(e, 12, 1, { element: 'fire' }); } },
   },
   ai(e, c, r) {
     const flames = c.livingEnemies().filter((x) => x.def.id === 'candle_flame').length;
@@ -150,10 +150,10 @@ def('candelabra', {
   initialSummons: ['candle_flame', 'candle_flame'],
 });
 def('candle_flame', {
-  name: '燭火', hp: [12, 14], sprite: 'flame', size: 0.7, flying: true, minion: true,
+  name: '燭火', hp: [10, 12], sprite: 'flame', size: 0.7, flying: true, minion: true,
   moves: {
     flicker: { name: '揺らめき', intent: 'attack_debuff', dmg: 3, async act(c, e) { await c.enemyAttack(e, 3, 1, { element: 'fire' }); await c.apply(c.player, 'burn', 2, { source: e }); } },
-    flare: { name: '燃え上がり', intent: 'attack', dmg: 7, async act(c, e) { await c.enemyAttack(e, 7, 1, { element: 'fire' }); } },
+    flare: { name: '燃え上がり', intent: 'attack', dmg: 5, async act(c, e) { await c.enemyAttack(e, 5, 1, { element: 'fire' }); } },
   },
   ai(e) { return last(e) === 'flicker' ? 'flare' : 'flicker'; },
 });
@@ -170,13 +170,13 @@ def('gargoyle', {
 
 // ---------------------------------------------------------------- boss
 def('lantern_king', {
-  name: '虚ろの灯王', hp: [200, 200], sprite: 'boss', size: 2.0, boss: true,
+  name: '虚ろの灯王', hp: [180, 180], sprite: 'boss', size: 2.0, boss: true,
   moves: {
     summon: { name: '呼び声', intent: 'summon', async act(c, e) {
       const n = 2 - c.livingEnemies().filter((x) => x.def.id === 'wisp').length;
       for (let i = 0; i < n; i++) await c.summon('wisp', e);
     } },
-    black_flame: { name: '黒炎', intent: 'attack_debuff', dmg: 7, async act(c, e) { await c.enemyAttack(e, 7, 1, { element: 'dark' }); await c.apply(c.player, 'burn', 4, { source: e }); } },
+    black_flame: { name: '黒炎', intent: 'attack_debuff', dmg: 7, async act(c, e) { await c.enemyAttack(e, 7, 1, { element: 'dark' }); await c.apply(c.player, 'burn', 3, { source: e }); } },
     drain: { name: '魂喰らい', intent: 'attack_debuff', dmg: 12, async act(c, e) {
       await c.enemyAttack(e, 12, 1, { element: 'dark' });
       const n = Math.min(3, c.player.statuses.radiance || 0);
@@ -184,13 +184,13 @@ def('lantern_king', {
       await c.enemyBlock(e, 4 * n);
     } },
     omen: { name: '終焉の兆し', intent: 'charge', async act(c, e) { await c.enemyBlock(e, 12); } },
-    end: { name: '終焉の灯', intent: 'attack', dmg: 30, heavy: true, ultimate: true, async act(c, e) { await c.enemyAttack(e, 30, 1, { heavy: true, ultimate: true }); } },
+    end: { name: '終焉の灯', intent: 'attack', dmg: 28, heavy: true, ultimate: true, async act(c, e) { await c.enemyAttack(e, 28, 1, { heavy: true, ultimate: true }); } },
     // phase 2
     awaken: { name: '覚醒', intent: 'buff', async act(c, e) { await c.apply(e, 'strength', 2, { source: e }); await c.enemyBlock(e, 15); } },
     eclipse: { name: '蝕', intent: 'attack', dmg: 6, hits: 3, async act(c, e) { await c.enemyAttack(e, 6, 3, { element: 'dark' }); } },
-    hellfire: { name: '冥炎', intent: 'attack_debuff', dmg: 10, async act(c, e) { await c.enemyAttack(e, 10, 1, { element: 'dark' }); await c.apply(c.player, 'burn', 5, { source: e }); await c.addCards('ash', 'discard', 1, e); } },
+    hellfire: { name: '冥炎', intent: 'attack_debuff', dmg: 10, async act(c, e) { await c.enemyAttack(e, 10, 1, { element: 'dark' }); await c.apply(c.player, 'burn', 4, { source: e }); await c.addCards('ash', 'discard', 1, e); } },
     omen2: { name: '滅びの兆し', intent: 'charge', async act(c, e) { await c.enemyBlock(e, 18); } },
-    end2: { name: '永夜の灯', intent: 'attack', dmg: 36, heavy: true, ultimate: true, async act(c, e) { await c.enemyAttack(e, 36, 1, { heavy: true, ultimate: true }); } },
+    end2: { name: '永夜の灯', intent: 'attack', dmg: 32, heavy: true, ultimate: true, async act(c, e) { await c.enemyAttack(e, 32, 1, { heavy: true, ultimate: true }); } },
   },
   ai(e, c, r) {
     const wisps = c.livingEnemies().filter((x) => x.def.id === 'wisp').length;
@@ -214,9 +214,9 @@ def('lantern_king', {
   phaseAt: 0.5,
 });
 def('wisp', {
-  name: '灯魂', hp: [12, 14], sprite: 'wisp', size: 0.7, flying: true, minion: true,
+  name: '灯魂', hp: [10, 12], sprite: 'wisp', size: 0.7, flying: true, minion: true,
   moves: {
-    touch: { name: '冷たい手', intent: 'attack', dmg: 5, async act(c, e) { await c.enemyAttack(e, 5, 1, { element: 'dark' }); } },
+    touch: { name: '冷たい手', intent: 'attack', dmg: 4, async act(c, e) { await c.enemyAttack(e, 4, 1, { element: 'dark' }); } },
     sap: { name: '吸精', intent: 'debuff', async act(c, e) { await c.apply(c.player, 'weak', 1, { source: e }); } },
   },
   ai(e, c, r) { return last(e) === 'sap' ? 'touch' : r.chance(0.75) ? 'touch' : 'sap'; },

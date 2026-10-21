@@ -1,6 +1,6 @@
 // Heuristic auto-player used for balance simulation and smoke tests.
-import { CARDS, cardStats } from '../src/core/cards.js';
-import { POTIONS } from '../src/core/relics.js';
+import { CARDS, cardStats } from '../core/cards.js';
+import { POTIONS } from '../core/relics.js';
 
 // Base value of picking a card, plus per-archetype bonuses.
 const TIER = {
@@ -121,24 +121,42 @@ export class Bot {
     return best;
   }
 
+  bestPlay(c) {
+    let best = null;
+    let bv = 0.5;
+    for (const inst of c.hand) {
+      if (!c.canPlay(inst)) continue;
+      const d = CARDS[inst.id];
+      if (cardStats(inst).cost === 'X' && c.energy === 0) continue;
+      const t = d.target === 'enemy' ? this.chooseTarget(c, inst) : null;
+      const v = this.scorePlay(c, inst, t || c.livingEnemies()[0]);
+      if (v > bv) { bv = v; best = [inst, t]; }
+    }
+    return best;
+  }
+
   async playTurn(c) {
     let guard = 0;
     // potions: use defensively when in danger, aggressively in elite/boss
     await this.maybePotion(c);
     while (!c.over && guard++ < 40) {
-      let best = null;
-      let bv = 0.5;
-      for (const inst of c.hand) {
-        if (!c.canPlay(inst)) continue;
-        const d = CARDS[inst.id];
-        if (cardStats(inst).cost === 'X' && c.energy === 0) continue;
-        const t = d.target === 'enemy' ? this.chooseTarget(c, inst) : null;
-        const v = this.scorePlay(c, inst, t || c.livingEnemies()[0]);
-        if (v > bv) { bv = v; best = [inst, t]; }
-      }
+      const best = this.bestPlay(c);
       if (!best) break;
       await c.playCard(best[0], best[1]);
     }
+  }
+
+  // Which potion slot (if any) the bot wants to use right now.
+  potionToUse(c) {
+    const run = c.run;
+    for (let i = run.potions.length - 1; i >= 0; i--) {
+      const id = run.potions[i];
+      if (!id) continue;
+      const danger = this.incoming(c) > c.player.hp * 0.5 || c.player.hp < c.player.maxHp * 0.3;
+      const big = c.kind !== 'normal' && c.turn <= 2;
+      if (id === 'heal' ? c.player.hp < c.player.maxHp * 0.35 : danger || big) return i;
+    }
+    return -1;
   }
 
   async maybePotion(c) {
@@ -157,5 +175,29 @@ export class Bot {
     const junk = cards.find((h) => ['ash', 'mud', 'regret'].includes(h.id));
     if (junk) return junk;
     return cards.find((h) => h.id === 'strike') || cards.find((h) => h.id === 'defend') || cards[0];
+  }
+
+  choosePath(run, opts) {
+    const bot = this;
+    const types = opts.map((id) => run.map[id].type);
+    const score = (t) => {
+      const hpr = run.hp / run.maxHp;
+      switch (t) {
+        case 'elite': return hpr > 0.7 ? 6 : hpr > 0.5 ? 2 : -5;
+        case 'rest': return hpr < 0.5 ? 7 : 2;
+        case 'shop': return run.gold > 150 ? 6 : 1;
+        case 'event': return 3;
+        case 'treasure': return 9;
+        case 'combat': return 3.5;
+        default: return 0;
+      }
+    };
+    let best = opts[0];
+    let bv = -Infinity;
+    for (let i = 0; i < opts.length; i++) {
+      const v = bot.strategy === 'random' ? bot.rng() : score(types[i]) + bot.rng();
+      if (v > bv) { bv = v; best = opts[i]; }
+    }
+    return best;
   }
 }
