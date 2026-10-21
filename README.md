@@ -68,7 +68,7 @@ npm run preview      # http://127.0.0.1:4173
 npm run build:single # dist-single/index.html 1ファイルにまとめたビルド
 ```
 
-`main` への push で GitHub Pages へデプロイするワークフロー（`.github/workflows/pages.yml`）を同梱しています。このワークフロー上でシミュレーター（200回×7方針）と本番ビルドは成功していますが、リポジトリの Pages 設定が未有効のため公開ステップで止まっています。Settings → Pages → Source を「GitHub Actions」にすると公開されます（公開後の動作は**未確認**）。
+`main` への push で GitHub Pages へデプロイするワークフロー（`.github/workflows/pages.yml`）を同梱しています。このワークフロー（シミュレーター200回×7方針 → 本番ビルド → デプロイ）は成功しており、公開先は https://onego15.github.io/slay-claude/ です。ただし制作環境からは github.io に接続できず、公開ページでの動作は**未確認**です。
 
 推奨環境：WebGL2 対応のデスクトップブラウザ（Chrome / Edge / Firefox 最新版）。音は最初のクリック後に鳴り始めます。
 
@@ -188,7 +188,7 @@ PASS  every playable card was played by the bots
 - 実GPU環境でのフレームレートは**未確認**（検証環境はGPUなしのソフトウェア描画で、1コマ約1秒かかるため仮想時間で検証）
 - 音（BGM・効果音・環境音）は生成処理がエラーなく動くことのみ確認。実際の聞こえ方は**未確認**（検証環境に音声出力がないため）
 - Safari・モバイル端末での動作は**未確認**
-- GitHub Pages での公開は**未確認**（Pages 設定が未有効のため。CI 上のシミュレーターとビルドは成功）
+- GitHub Pages の公開ページでの動作は**未確認**（デプロイ自体は成功。制作環境から github.io に接続できないため）
 
 ## グラフィック・UI・バランスの改善内容
 
