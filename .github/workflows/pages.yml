@@ -20,7 +20,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm run sim -- 30
+      - run: npm run sim -- 200
       - run: npm run build
       - uses: actions/configure-pages@v5
         with:
